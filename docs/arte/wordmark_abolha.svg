@@ -1,0 +1,18 @@
+<svg width="740" height="270" viewBox="0 0 740 270" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <g id="letras" fill-rule="evenodd">
+      <path d="M 36 92 L 68 72 L 103 80 L 119 112 L 117 186 L 85 190 L 76 179 L 52 188 L 30 169 L 33 139 L 56 122 L 76 118 L 80 106 L 62 105 Z M 59 144 L 78 141 L 78 163 L 63 166 Z"/>
+      <path d="M 141 14 L 197 9 L 227 19 L 240 44 L 234 76 L 216 94 L 233 109 L 242 139 L 234 172 L 208 189 L 173 193 L 141 188 Z M 179 40 L 200 37 L 206 55 L 201 72 L 179 75 Z M 179 118 L 202 115 L 207 137 L 202 161 L 179 163 Z"/>
+      <path d="M 277 84 L 312 71 L 344 82 L 357 117 L 350 159 L 324 186 L 288 183 L 266 157 L 264 112 Z M 299 113 L 318 108 L 324 135 L 316 157 L 301 154 L 297 135 Z"/>
+      <path d="M 379 15 L 415 10 L 421 100 L 418 186 L 383 190 L 380 100 Z"/>
+      <path d="M 443 15 L 479 10 L 481 73 L 505 65 L 531 78 L 539 112 L 536 184 L 502 188 L 500 119 L 481 117 L 481 188 L 445 190 L 447 100 Z"/>
+      <path d="M 567 92 L 599 72 L 634 80 L 650 112 L 648 186 L 616 190 L 607 179 L 583 188 L 561 169 L 564 139 L 587 122 L 607 118 L 611 106 L 593 105 Z M 590 144 L 609 141 L 609 163 L 594 166 Z"/>
+    </g>
+  </defs>
+  <g transform="translate(20,40)">
+    <use href="#letras" transform="translate(12,17)" fill="#8A4DFF" stroke="#8A4DFF" stroke-width="30" stroke-linejoin="round"/>
+    <use href="#letras" transform="translate(6,9)" fill="#FF5CAA" stroke="#FF5CAA" stroke-width="30" stroke-linejoin="round"/>
+    <use href="#letras" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="28" stroke-linejoin="round"/>
+    <use href="#letras" fill="#0E0A1A"/>
+  </g>
+</svg>
