@@ -7,6 +7,7 @@
   <img alt="Firebase" src="https://img.shields.io/badge/Firebase-FF5CAA?style=for-the-badge&logo=firebase&logoColor=white">
   <img alt="Tema" src="https://img.shields.io/badge/tema-escuro-0E0A1A?style=for-the-badge">
   <img alt="Status" src="https://img.shields.io/badge/CP4-conclu%C3%ADdo-D94FD6?style=for-the-badge">
+  <img alt="Status2" src="https://img.shields.io/badge/CP5-conclu%C3%ADdo-D94FD6?style=for-the-badge">
 </p>
 
 <p align="center">
@@ -244,5 +245,5 @@ aBolha/
 
 <p align="center">
   <img src="assets/images/logo.png" width="90" alt="Logo aBolha"><br>
-  <sub>Feito com roxo, rosa e muita bolha. · FIAP · Application Development</sub>
+  <sub>Feito com roxo, rosa e muita bolha. · FIAP · Equipe 11</sub>
 </p>
