@@ -94,7 +94,7 @@ Cada pessoa tem um **perfil** com os seus posts, contagem de **seguidores** e **
 ### Opção 1 — Baixar o APK (Android)
 
 1. Abra a página de **[Releases](https://github.com/enzinh16/aBolha/releases)**.
-2. Baixe o arquivo `app-release.apk` da versão mais recente.
+2. Baixe o arquivo `aBolha.apk` da versão mais recente.
 3. No celular, permita a instalação de apps de fontes desconhecidas e abra o arquivo.
 
 > ℹ️ O APK só aparece em *Releases* depois que alguém do grupo publicar a versão. Enquanto isso, use a opção 2.
