@@ -1,0 +1,13 @@
+<svg width="512" height="512" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
+  <!-- sombra rosa deslocada -->
+  <path d="M 66 62 C 82 40, 132 30, 172 44 C 212 58, 226 98, 214 134 C 202 168, 160 176, 130 172 L 104 196 L 102 170 C 70 168, 38 152, 34 118 C 32 94, 48 76, 66 62 Z"
+        transform="translate(7,8)" fill="#FF5CAA" stroke="#FF5CAA" stroke-width="12" stroke-linejoin="round"/>
+  <!-- balão -->
+  <path d="M 66 62 C 82 40, 132 30, 172 44 C 212 58, 226 98, 214 134 C 202 168, 160 176, 130 172 L 104 196 L 102 170 C 70 168, 38 152, 34 118 C 32 94, 48 76, 66 62 Z"
+        fill="#8A4DFF" stroke="#FFFFFF" stroke-width="10" stroke-linejoin="round" stroke-linecap="round"/>
+  <!-- bolhas de sabão, traço manual -->
+  <path d="M 70 98 C 62 88, 70 72, 86 72 C 102 72, 108 90, 100 102 C 92 112, 78 108, 70 98 Z" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M 128 84 C 122 76, 130 64, 142 66 C 154 68, 156 82, 148 90 C 140 96, 132 91, 128 84 Z" fill="none" stroke="#FFA3D1" stroke-width="5.5" stroke-linejoin="round"/>
+  <path d="M 164 118 C 160 112, 165 104, 173 105 C 181 107, 182 116, 176 121 C 171 124, 166 122, 164 118 Z" fill="none" stroke="#C9A8FF" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M 112 124 C 109 120, 112 115, 117 116 C 122 117, 123 123, 119 126 C 116 128, 113 127, 112 124 Z" fill="none" stroke="#FFFFFF" stroke-width="4.5" stroke-linejoin="round"/>
+</svg>
