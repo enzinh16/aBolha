@@ -9,6 +9,7 @@ import '../models/post_model.dart';
 import '../services/post_service.dart';
 import '../screens/user_profile_screen.dart';
 import '../screens/profile_screen.dart';
+import '../widgets/sketch_circle_button.dart';
 
 class PostDetailScreen extends StatefulWidget {
   final PostModel post;
@@ -1033,35 +1034,16 @@ class _PostDetailScreenState
 
                 const SizedBox(width: 8),
 
-                Container(
-                  decoration:
-                      const BoxDecoration(
-                    color:
-                        BolhaColors.primary,
-                    shape: BoxShape.circle,
-                  ),
-                  child: IconButton(
-                    onPressed:
-                        _enviandoComentario
-                            ? null
-                            : _enviarComentario,
-                    icon: _enviandoComentario
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child:
-                                CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color:
-                                  Colors.white,
-                            ),
-                          )
-                        : const Icon(
-                            Icons.send,
-                            color:
-                                Colors.white,
-                          ),
-                  ),
+                SketchCircleButton(
+                  color: BolhaColors.primary,
+                  size: 48,
+                  icon: _enviandoComentario
+                      ? Icons.hourglass_top_rounded
+                      : Icons.send_rounded,
+                  tooltip: 'Enviar',
+                  onPressed: _enviandoComentario
+                      ? null
+                      : _enviarComentario,
                 ),
               ],
             ),
