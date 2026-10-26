@@ -29,34 +29,163 @@ const List<List<double>> _tremida = [
   [1.5, 1.3, -1.2, 1.2, 0.9, -1.4, 1.1, 1.0, -1.4, 0.8, 1.5, 1.4, -0.9, -0.8, -1.5, 1.3, -1.6, 1.4, 0.9, 1.1],
 ];
 
+/// Guarda os caminhos já calculados (o desenho é sempre o mesmo para um
+/// mesmo tamanho/variante), para não recalcular a cada repintura.
+final Map<String, Path> _cacheCaminhos = <String, Path>{};
+
 /// Monta o caminho de um retângulo arredondado "traçado à mão".
+///
+/// O formato é o mesmo de sempre (cantos arredondados com leve tremido), mas
+/// o contorno final é uma curva contínua: sem pontinhas nem cortes, nem em
+/// círculos e botões em pílula.
 Path caminhoTremido(Rect rect, {double radius = 18, int variant = 0}) {
   final w = rect.width;
   final h = rect.height;
-  final r = math.min(radius, math.min(w, h) / 2);
+
+  if (w <= 0 || h <= 0) {
+    return Path()..addRect(rect);
+  }
+
+  final chave = '${w.toStringAsFixed(1)}|${h.toStringAsFixed(1)}|'
+      '${radius.toStringAsFixed(1)}|${variant.abs() % _tremida.length}';
+
+  var base = _cacheCaminhos[chave];
+
+  if (base == null) {
+    if (_cacheCaminhos.length > 300) {
+      _cacheCaminhos.clear();
+    }
+    base = _construirCaminho(w, h, radius, variant);
+    _cacheCaminhos[chave] = base;
+  }
+
+  return base.shift(rect.topLeft);
+}
+
+/// Reamostra uma polilinha fechada em [n] pontos igualmente espaçados.
+List<Offset> _reamostrar(List<Offset> pts, int n) {
+  final m = pts.length;
+  final acum = List<double>.filled(m + 1, 0);
+
+  for (var i = 0; i < m; i++) {
+    acum[i + 1] = acum[i] + (pts[(i + 1) % m] - pts[i]).distance;
+  }
+
+  final total = acum[m];
+  final res = <Offset>[];
+  var j = 0;
+
+  for (var i = 0; i < n; i++) {
+    final alvo = total * i / n;
+
+    while (j < m - 1 && acum[j + 1] < alvo) {
+      j++;
+    }
+
+    final comp = acum[j + 1] - acum[j];
+    final f = comp <= 0 ? 0.0 : (alvo - acum[j]) / comp;
+
+    res.add(Offset.lerp(pts[j], pts[(j + 1) % m], f)!);
+  }
+
+  return res;
+}
+
+Path _construirCaminho(
+  double w,
+  double h,
+  double radius,
+  int variant,
+) {
+  final r = math.max(0.5, math.min(radius, math.min(w, h) / 2));
   // Em elementos pequenos o tremido diminui, em grandes não passa de ~2.5px
   final k = (math.min(w, h) / 70).clamp(0.45, 1.6).toDouble();
   final o = _tremida[variant.abs() % _tremida.length];
   double d(int i) => o[i] * k;
 
-  final l = rect.left;
-  final t = rect.top;
-  final rt = rect.right;
-  final b = rect.bottom;
-  final cx = (l + rt) / 2;
-  final cy = (t + b) / 2;
+  const l = 0.0;
+  const t = 0.0;
+  final rt = w;
+  final b = h;
+  final cx = w / 2;
+  final cy = h / 2;
 
-  return Path()
-    ..moveTo(l + r, t + d(0))
-    ..quadraticBezierTo(cx, t + d(1), rt - r, t + d(2))
-    ..quadraticBezierTo(rt + d(3), t + d(4), rt + d(5), t + r)
-    ..quadraticBezierTo(rt + d(6), cy, rt + d(7), b - r)
-    ..quadraticBezierTo(rt + d(8), b + d(9), rt - r, b + d(10))
-    ..quadraticBezierTo(cx, b + d(11), l + r, b + d(12))
-    ..quadraticBezierTo(l + d(13), b + d(14), l + d(15), b - r)
-    ..quadraticBezierTo(l + d(16), cy, l + d(17), t + r)
-    ..quadraticBezierTo(l + d(18), t + d(19), l + r, t + d(0))
-    ..close();
+  // As 8 curvas do desenho original: [início, controle, fim].
+  final segmentos = <List<Offset>>[
+    [Offset(l + r, t + d(0)), Offset(cx, t + d(1)), Offset(rt - r, t + d(2))],
+    [Offset(rt - r, t + d(2)), Offset(rt + d(3), t + d(4)), Offset(rt + d(5), t + r)],
+    [Offset(rt + d(5), t + r), Offset(rt + d(6), cy), Offset(rt + d(7), b - r)],
+    [Offset(rt + d(7), b - r), Offset(rt + d(8), b + d(9)), Offset(rt - r, b + d(10))],
+    [Offset(rt - r, b + d(10)), Offset(cx, b + d(11)), Offset(l + r, b + d(12))],
+    [Offset(l + r, b + d(12)), Offset(l + d(13), b + d(14)), Offset(l + d(15), b - r)],
+    [Offset(l + d(15), b - r), Offset(l + d(16), cy), Offset(l + d(17), t + r)],
+    [Offset(l + d(17), t + r), Offset(l + d(18), t + d(19)), Offset(l + r, t + d(0))],
+  ];
+
+  // Passo 1: amostra as curvas. Trechos sem comprimento (os lados que
+  // "somem" em círculos e pílulas) são ignorados: eram eles que criavam as
+  // pontinhas no contorno.
+  const passos = 14;
+  final bruto = <Offset>[];
+
+  for (final s in segmentos) {
+    if ((s[2] - s[0]).distance < 3.5) continue;
+
+    for (var i = 0; i < passos; i++) {
+      final u = i / passos;
+      final v = 1 - u;
+      bruto.add(s[0] * (v * v) + s[1] * (2 * v * u) + s[2] * (u * u));
+    }
+  }
+
+  if (bruto.length < 3) {
+    return Path()
+      ..addRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(0, 0, w, h),
+          Radius.circular(r),
+        ),
+      );
+  }
+
+  var perimetro = 0.0;
+
+  for (var i = 0; i < bruto.length; i++) {
+    perimetro += (bruto[(i + 1) % bruto.length] - bruto[i]).distance;
+  }
+
+  // Passo 2: pontos igualmente espaçados e suavização leve, que arredonda
+  // os encontros das curvas em ângulo (os "cortes") sem mudar o formato.
+  final n1 = (perimetro / 2).round().clamp(32, 600).toInt();
+  var pts = _reamostrar(bruto, n1);
+
+  for (var iteracao = 0; iteracao < 6; iteracao++) {
+    final anterior = pts;
+    pts = List<Offset>.generate(n1, (i) {
+      return (anterior[(i - 1 + n1) % n1] + anterior[(i + 1) % n1]) * 0.25 +
+          anterior[i] * 0.5;
+    });
+  }
+
+  // Passo 3: curva final lisa (Catmull-Rom fechada em Béziers cúbicas).
+  final m = (perimetro / 5).round().clamp(16, 220).toInt();
+  final p = _reamostrar(pts, m);
+
+  final path = Path()..moveTo(p[0].dx, p[0].dy);
+
+  for (var i = 0; i < m; i++) {
+    final p0 = p[(i - 1 + m) % m];
+    final p1 = p[i];
+    final p2 = p[(i + 1) % m];
+    final p3 = p[(i + 2) % m];
+
+    final c1 = p1 + (p2 - p0) / 6;
+    final c2 = p2 - (p3 - p1) / 6;
+
+    path.cubicTo(c1.dx, c1.dy, c2.dx, c2.dy, p2.dx, p2.dy);
+  }
+
+  return path..close();
 }
 
 double _raio(BorderRadiusGeometry radius) {
