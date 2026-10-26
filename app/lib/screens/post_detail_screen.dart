@@ -40,6 +40,54 @@ class _PostDetailScreenState
     super.dispose();
   }
 
+  Widget _avatarUsuario({
+    required String userId,
+    required String nome,
+    required double radius,
+  }) {
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .snapshots(),
+      builder: (context, snapshot) {
+        final foto = snapshot.data?.data()?['fotoPerfil'];
+        final fotoUrl = foto is String ? foto.trim() : '';
+
+        Widget avatarFallback() {
+          return Text(
+            nome.isNotEmpty ? nome[0].toUpperCase() : 'U',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: radius >= 24 ? 19 : 14,
+              fontWeight: FontWeight.bold,
+            ),
+          );
+        }
+
+        return SketchAvatar(
+          radius: radius,
+          backgroundColor: BolhaColors.primary,
+          child: fotoUrl.isEmpty
+              ? avatarFallback()
+              : SizedBox(
+                  width: radius * 2,
+                  height: radius * 2,
+                  child: ClipOval(
+                    child: Image.network(
+                      fotoUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Center(
+                        child: avatarFallback(),
+                      ),
+                    ),
+                  ),
+                ),
+        );
+      },
+    );
+  }
+
   String _formatarData(DateTime? data) {
     if (data == null) {
       return 'Agora';
@@ -340,21 +388,10 @@ class _PostDetailScreenState
                   post.autorId,
                 );
               },
-              child: SketchAvatar(
+              child: _avatarUsuario(
+                userId: post.autorId,
+                nome: post.autorNome,
                 radius: 25,
-                backgroundColor:
-                    BolhaColors.primary,
-                child: Text(
-                  post.autorNome.isNotEmpty
-                      ? post.autorNome[0]
-                          .toUpperCase()
-                      : 'U',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 19,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
               ),
             ),
 
@@ -741,25 +778,10 @@ class _PostDetailScreenState
                           comentario.autorId,
                         );
                       },
-                      child: SketchAvatar(
+                      child: _avatarUsuario(
+                        userId: comentario.autorId,
+                        nome: comentario.autorNome,
                         radius: 18,
-                        backgroundColor:
-                            BolhaColors.primary,
-                        child: Text(
-                          comentario.autorNome
-                                  .isNotEmpty
-                              ? comentario
-                                  .autorNome[0]
-                                  .toUpperCase()
-                              : 'U',
-                          style:
-                              const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight:
-                                FontWeight.bold,
-                          ),
-                        ),
                       ),
                     ),
 

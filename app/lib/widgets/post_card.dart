@@ -32,6 +32,53 @@ class PostCard extends StatelessWidget {
     return '$dia/$mes/${data.year} às $hora:$minuto';
   }
 
+  Widget _avatarUsuario({
+    required String userId,
+    required String nome,
+    required double radius,
+  }) {
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .snapshots(),
+      builder: (context, snapshot) {
+        final foto = snapshot.data?.data()?['fotoPerfil'];
+        final fotoUrl = foto is String ? foto.trim() : '';
+
+        Widget avatarFallback() {
+          return Text(
+            nome.isNotEmpty ? nome[0].toUpperCase() : 'U',
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          );
+        }
+
+        return SketchAvatar(
+          radius: radius,
+          backgroundColor: BolhaColors.primary,
+          child: fotoUrl.isEmpty
+              ? avatarFallback()
+              : SizedBox(
+                  width: radius * 2,
+                  height: radius * 2,
+                  child: ClipOval(
+                    child: Image.network(
+                      fotoUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Center(
+                        child: avatarFallback(),
+                      ),
+                    ),
+                  ),
+                ),
+        );
+      },
+    );
+  }
+
   Future<void> _abrirPerfilAutor(
     BuildContext context,
   ) async {
@@ -211,21 +258,10 @@ class PostCard extends StatelessWidget {
                       },
                       child: Row(
                         children: [
-                          SketchAvatar(
+                          _avatarUsuario(
+                            userId: post.autorId,
+                            nome: post.autorNome,
                             radius: 21,
-                            backgroundColor:
-                                BolhaColors.primary,
-                            child: Text(
-                              post.autorNome.isNotEmpty
-                                  ? post.autorNome[0]
-                                      .toUpperCase()
-                                  : 'U',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight:
-                                    FontWeight.bold,
-                              ),
-                            ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
