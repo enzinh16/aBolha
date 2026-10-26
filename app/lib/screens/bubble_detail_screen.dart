@@ -9,6 +9,7 @@ import '../services/bubble_service.dart';
 import '../services/post_service.dart';
 import '../widgets/post_card.dart';
 import 'create_post_screen.dart';
+import '../widgets/sketch_circle_button.dart';
 
 class BubbleDetailScreen extends StatefulWidget {
   final String bubbleId;
@@ -193,20 +194,20 @@ class _BubbleDetailScreenState
                 participa,
               ),
               floatingActionButton: participa
-                  ? FloatingActionButton(
+                  ? SketchCircleButton(
+                      icon: Icons.add,
+                      tooltip: 'Criar Postagem',
                       onPressed: () async {
                         await Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) =>
-                                CreatePostScreen(
+                            builder: (_) => CreatePostScreen(
                               bubbleId: bubble.id,
                               bubbleNome: bubble.nome,
                             ),
                           ),
                         );
                       },
-                      child: const Icon(Icons.add),
                     )
                   : null,
             );
