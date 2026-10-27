@@ -8,6 +8,8 @@ import '../models/post_model.dart';
 import '../services/bubble_service.dart';
 import '../services/post_service.dart';
 import '../widgets/post_card.dart';
+import 'bubble_members_screen.dart';
+import 'edit_bubble_screen.dart';
 import 'create_post_screen.dart';
 import '../widgets/sketch_circle_button.dart';
 
@@ -38,6 +40,75 @@ class _BubbleDetailScreenState
     final usuario = FirebaseAuth.instance.currentUser;
 
     if (usuario == null) return;
+
+    // O criador só sai depois de deixar pelo menos um líder
+    if (participa && usuario.uid == bubble.criadorId) {
+      bool podeSair;
+
+      try {
+        podeSair = await _bubbleService.criadorPodeSair(
+          bubbleId: bubble.id,
+          criadorId: bubble.criadorId,
+        );
+      } catch (e) {
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Não foi possível verificar os líderes da Bolha.\n$e',
+            ),
+          ),
+        );
+        return;
+      }
+
+      if (!podeSair) {
+        if (!mounted) return;
+
+        final verMembros = await showDialog<bool>(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: const Text('Defina um líder antes de sair'),
+              content: const Text(
+                'Você é o criador desta Bolha. Antes de sair, torne '
+                'pelo menos um membro líder, para que alguém continue '
+                'cuidando da comunidade.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context, false);
+                  },
+                  child: const Text('Entendi'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context, true);
+                  },
+                  child: const Text('Ver membros'),
+                ),
+              ],
+            );
+          },
+        );
+
+        if (verMembros == true && mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => BubbleMembersScreen(
+                bubbleId: bubble.id,
+                criadorId: bubble.criadorId,
+              ),
+            ),
+          );
+        }
+
+        return;
+      }
+    }
 
     if (participa) {
       final sair = await showDialog<bool>(
@@ -185,9 +256,34 @@ class _BubbleDetailScreenState
             final participa =
                 memberSnapshot.data?.exists ?? false;
 
+            // Só o criador e os líderes podem editar a Bolha
+            final papel =
+                (memberSnapshot.data?.data()?['papel'] ?? 'membro')
+                    .toString();
+
+            final podeEditar = usuario.uid == bubble.criadorId ||
+                (participa && papel == 'lider');
+
             return Scaffold(
               appBar: AppBar(
                 title: const Text('Bolha'),
+                actions: [
+                  if (podeEditar)
+                    IconButton(
+                      tooltip: 'Editar Bolha',
+                      icon: const Icon(Icons.edit_outlined),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => EditBubbleScreen(
+                              bubble: bubble,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                ],
               ),
               body: _conteudo(
                 bubble,
@@ -284,6 +380,17 @@ class _BubbleDetailScreenState
                       Icons.people_outline,
                       'Membros',
                       '$quantidade',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => BubbleMembersScreen(
+                              bubbleId: bubble.id,
+                              criadorId: bubble.criadorId,
+                            ),
+                          ),
+                        );
+                      },
                     );
                   },
                 ),
@@ -472,9 +579,10 @@ class _BubbleDetailScreenState
   Widget _informacao(
     IconData icone,
     String titulo,
-    String valor,
-  ) {
-    return Row(
+    String valor, {
+    VoidCallback? onTap,
+  }) {
+    final linha = Row(
       children: [
         Icon(
           icone,
@@ -497,7 +605,25 @@ class _BubbleDetailScreenState
             overflow: TextOverflow.ellipsis,
           ),
         ),
+
+        if (onTap != null)
+          const Icon(
+            Icons.chevron_right,
+            size: 22,
+            color: BolhaColors.textMuted,
+          ),
       ],
+    );
+
+    if (onTap == null) return linha;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: linha,
+      ),
     );
   }
 }
