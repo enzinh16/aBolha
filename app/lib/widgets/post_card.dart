@@ -183,6 +183,37 @@ class PostCard extends StatelessWidget {
     }
   }
 
+  Widget _botaoExcluir(BuildContext context) {
+    return PopupMenuButton<String>(
+                      onSelected: (valor) {
+                        if (valor == 'excluir') {
+                          _confirmarExclusao(
+                            context,
+                          );
+                        }
+                      },
+                      itemBuilder: (context) {
+                        return const [
+                          PopupMenuItem<String>(
+                            value: 'excluir',
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.delete_outline,
+                                  color: BolhaColors.danger,
+                                ),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Excluir publicação',
+                                ),
+                              ],
+                            ),
+                          ),
+                        ];
+                      },
+                    );
+  }
+
   Future<void> _atualizarCurtidas() async {
     try {
       final doc = await FirebaseFirestore.instance
@@ -298,33 +329,14 @@ class PostCard extends StatelessWidget {
                     ),
                   ),
                   if (souAutor)
-                    PopupMenuButton<String>(
-                      onSelected: (valor) {
-                        if (valor == 'excluir') {
-                          _confirmarExclusao(
-                            context,
-                          );
-                        }
-                      },
-                      itemBuilder: (context) {
-                        return const [
-                          PopupMenuItem<String>(
-                            value: 'excluir',
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.delete_outline,
-                                  color: BolhaColors.danger,
-                                ),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Excluir publicação',
-                                ),
-                              ],
-                            ),
-                          ),
-                        ];
-                      },
+                    _botaoExcluir(context)
+                  else if (usuario != null)
+                    // Criador, líderes e moderadores da Bolha também
+                    // podem excluir publicações de outras pessoas.
+                    _SoParaEquipe(
+                      bubbleId: post.bubbleId,
+                      uid: usuario.uid,
+                      child: _botaoExcluir(context),
                     ),
                 ],
               ),
@@ -529,6 +541,98 @@ class PostCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Mostra o [child] só para quem faz parte da equipe da Bolha da publicação:
+/// o criador, líderes ou moderadores.
+class _SoParaEquipe extends StatefulWidget {
+  final String bubbleId;
+  final String uid;
+  final Widget child;
+
+  const _SoParaEquipe({
+    required this.bubbleId,
+    required this.uid,
+    required this.child,
+  });
+
+  @override
+  State<_SoParaEquipe> createState() => _SoParaEquipeState();
+}
+
+class _SoParaEquipeState extends State<_SoParaEquipe> {
+  // O criador de cada Bolha é buscado uma vez só e reaproveitado por todas
+  // as publicações da mesma Bolha (evita uma leitura por publicação).
+  static final Map<String, Future<String>> _criadores = {};
+
+  Stream<DocumentSnapshot<Map<String, dynamic>>>? _membro;
+  Future<String>? _criadorId;
+
+  static Future<String> _buscarCriador(String bubbleId) {
+    return _criadores.putIfAbsent(bubbleId, () async {
+      try {
+        final doc = await FirebaseFirestore.instance
+            .collection('bubbles')
+            .doc(bubbleId)
+            .get();
+
+        return (doc.data()?['criadorId'] ?? '').toString();
+      } catch (_) {
+        _criadores.remove(bubbleId);
+        return '';
+      }
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    if (widget.bubbleId.isEmpty) return;
+
+    _membro = FirebaseFirestore.instance
+        .collection('bubbles')
+        .doc(widget.bubbleId)
+        .collection('members')
+        .doc(widget.uid)
+        .snapshots();
+
+    _criadorId = _buscarCriador(widget.bubbleId);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final membro = _membro;
+    final criadorId = _criadorId;
+
+    if (membro == null || criadorId == null) {
+      return const SizedBox.shrink();
+    }
+
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: membro,
+      builder: (context, membroSnapshot) {
+        final papel =
+            (membroSnapshot.data?.data()?['papel'] ?? 'membro')
+                .toString();
+
+        final ehEquipe = papel == 'moderador' || papel == 'lider';
+
+        return FutureBuilder<String>(
+          future: criadorId,
+          builder: (context, criadorSnapshot) {
+            final ehCriador = criadorSnapshot.data == widget.uid;
+
+            if (ehCriador || ehEquipe) {
+              return widget.child;
+            }
+
+            return const SizedBox.shrink();
+          },
+        );
+      },
     );
   }
 }
