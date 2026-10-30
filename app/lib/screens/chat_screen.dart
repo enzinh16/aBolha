@@ -1,12 +1,15 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:image_picker/image_picker.dart';
 import '../theme/app_theme.dart';
 import '../theme/sketch_shapes.dart';
 import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
 import '../services/chat_service.dart';
+import '../services/imgbb_service.dart';
 import '../widgets/sketch_circle_button.dart';
 import 'user_profile_screen.dart';
 
@@ -15,11 +18,13 @@ class _UltimaMensagem {
   final String texto;
   final String senderId;
   final DateTime? data;
+  final bool temImagem;
 
   const _UltimaMensagem({
     required this.texto,
     required this.senderId,
     required this.data,
+    this.temImagem = false,
   });
 
   /// Procura o primeiro campo do tipo Timestamp do documento, assim não
@@ -64,6 +69,7 @@ class _UltimaMensagem {
       texto: (dados['text'] ?? '').toString(),
       senderId: (dados['senderId'] ?? '').toString(),
       data: maiorData,
+      temImagem: (dados['imageUrl'] ?? '').toString().isNotEmpty,
     );
   }
 }
@@ -225,7 +231,11 @@ class _ChatScreenState extends State<ChatScreen> {
       return 'Nenhuma mensagem ainda';
     }
 
-    final texto = ultima.texto.replaceAll('\n', ' ').trim();
+    var texto = ultima.texto.replaceAll('\n', ' ').trim();
+
+    if (ultima.temImagem) {
+      texto = texto.isEmpty ? '📷 Foto' : '📷 $texto';
+    }
 
     if (ultima.senderId == meuUid) {
       return 'Você: $texto';
@@ -348,6 +358,11 @@ class _ConversaScreenState extends State<ConversaScreen> {
 
   final ScrollController _scrollController = ScrollController();
 
+  final ImagePicker _picker = ImagePicker();
+  final ImgBBService _imgBBService = ImgBBService();
+
+  bool _enviandoImagem = false;
+
   late String _conversationId;
 
   @override
@@ -410,6 +425,105 @@ class _ConversaScreenState extends State<ConversaScreen> {
         ),
       ),
     );
+  }
+
+  void _rolarParaOFim() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  void _avisar(String texto) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(texto)),
+    );
+  }
+
+  /// Escolhe uma foto (câmera ou galeria), mostra uma prévia com legenda
+  /// opcional e, se a pessoa confirmar, envia para o ImgBB e manda a
+  /// mensagem com a imagem.
+  Future<void> _escolherImagem(ImageSource origem) async {
+    if (_enviandoImagem) return;
+
+    final usuarioAtual = _authService.usuarioAtual;
+
+    if (usuarioAtual == null) return;
+
+    XFile? imagem;
+
+    try {
+      imagem = await _picker.pickImage(
+        source: origem,
+        imageQuality: 85,
+        maxWidth: 1920,
+        maxHeight: 1920,
+      );
+    } catch (e) {
+      _avisar('Não foi possível selecionar a imagem: $e');
+      return;
+    }
+
+    if (imagem == null || !mounted) return;
+
+    final bytes = await imagem.readAsBytes();
+
+    if (!mounted) return;
+
+    // Prévia: devolve a legenda ao enviar, ou null se cancelar.
+    final legenda = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => _PreviaImagemScreen(
+          bytes: bytes,
+          destinatario: widget.outroUsuarioNome,
+        ),
+      ),
+    );
+
+    if (legenda == null || !mounted) return;
+
+    setState(() {
+      _enviandoImagem = true;
+    });
+
+    try {
+      // Guarda a proporção para a mensagem ocupar o tamanho certo na tela
+      // antes mesmo de a imagem terminar de carregar.
+      double? proporcao;
+
+      try {
+        final decodificada = await decodeImageFromList(bytes);
+        proporcao = decodificada.width / decodificada.height;
+      } catch (_) {}
+
+      final resultado = await _imgBBService.enviarImagem(imagem);
+
+      await _chatService.enviarMensagem(
+        conversationId: _conversationId,
+        senderId: usuarioAtual.uid,
+        texto: legenda,
+        imagemUrl: resultado['url'],
+        imagemProporcao: proporcao,
+      );
+
+      _rolarParaOFim();
+    } catch (e) {
+      _avisar('Não foi possível enviar a imagem.\n$e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _enviandoImagem = false;
+        });
+      }
+    }
   }
 
   Future<void> _enviarMensagem() async {
@@ -549,6 +663,15 @@ class _ConversaScreenState extends State<ConversaScreen> {
                     final souEu =
                         senderId == usuarioAtual.uid;
 
+                    final imagemUrl =
+                        (dados['imageUrl'] ?? '').toString();
+
+                    final proporcao =
+                        (dados['imageRatio'] as num?)?.toDouble() ??
+                            1.0;
+
+                    final temImagem = imagemUrl.isNotEmpty;
+
                     return Align(
                       alignment: souEu
                           ? Alignment.centerRight
@@ -562,10 +685,12 @@ class _ConversaScreenState extends State<ConversaScreen> {
                         margin: const EdgeInsets.only(
                           bottom: 14,
                         ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 11,
-                        ),
+                        padding: temImagem
+                            ? const EdgeInsets.all(6)
+                            : const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 11,
+                              ),
                         decoration: ShapeDecoration(
                           color: souEu
                               ? BolhaColors.primary
@@ -581,13 +706,44 @@ class _ConversaScreenState extends State<ConversaScreen> {
                             variant: index,
                           ),
                         ),
-                        child: Text(
-                          texto,
-                          style: const TextStyle(
-                            color: BolhaColors.textPrimary,
-                            fontSize: 16,
-                          ),
-                        ),
+                        child: temImagem
+                            ? Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
+                                children: [
+                                  _ImagemMensagem(
+                                    url: imagemUrl,
+                                    proporcao: proporcao,
+                                    legenda: texto.toString(),
+                                  ),
+                                  if (texto.toString().isNotEmpty)
+                                    Padding(
+                                      padding:
+                                          const EdgeInsets.fromLTRB(
+                                        8,
+                                        8,
+                                        8,
+                                        4,
+                                      ),
+                                      child: Text(
+                                        texto,
+                                        style: const TextStyle(
+                                          color:
+                                              BolhaColors.textPrimary,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              )
+                            : Text(
+                                texto,
+                                style: const TextStyle(
+                                  color: BolhaColors.textPrimary,
+                                  fontSize: 16,
+                                ),
+                              ),
                       ),
                     );
                   },
@@ -595,6 +751,13 @@ class _ConversaScreenState extends State<ConversaScreen> {
               },
             ),
           ),
+
+          if (_enviandoImagem)
+            const LinearProgressIndicator(
+              minHeight: 3,
+              color: BolhaColors.primary,
+              backgroundColor: BolhaColors.surfaceAlt,
+            ),
 
           SafeArea(
             child: Padding(
@@ -609,9 +772,11 @@ class _ConversaScreenState extends State<ConversaScreen> {
                 children: [
                   Expanded(
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 18,
-                        vertical: 4,
+                      padding: const EdgeInsets.fromLTRB(
+                        18,
+                        4,
+                        6,
+                        4,
                       ),
                       decoration: ShapeDecoration(
                         color: BolhaColors.background,
@@ -625,7 +790,10 @@ class _ConversaScreenState extends State<ConversaScreen> {
                           variant: 3,
                         ),
                       ),
-                      child: TextField(
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
                         controller: _mensagemController,
                         textInputAction:
                             TextInputAction.send,
@@ -651,6 +819,45 @@ class _ConversaScreenState extends State<ConversaScreen> {
                             vertical: 12,
                           ),
                         ),
+                      ),
+                          ),
+                          IconButton(
+                            tooltip: 'Galeria',
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(
+                              minWidth: 40,
+                              minHeight: 40,
+                            ),
+                            icon: const Icon(
+                              Icons.attach_file_rounded,
+                              color: BolhaColors.textMuted,
+                              size: 24,
+                            ),
+                            onPressed: _enviandoImagem
+                                ? null
+                                : () => _escolherImagem(
+                                      ImageSource.gallery,
+                                    ),
+                          ),
+                          IconButton(
+                            tooltip: 'Câmera',
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(
+                              minWidth: 40,
+                              minHeight: 40,
+                            ),
+                            icon: const Icon(
+                              Icons.photo_camera_outlined,
+                              color: BolhaColors.textMuted,
+                              size: 25,
+                            ),
+                            onPressed: _enviandoImagem
+                                ? null
+                                : () => _escolherImagem(
+                                      ImageSource.camera,
+                                    ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -718,6 +925,282 @@ class _AvatarUsuario extends StatelessWidget {
               : null,
         );
       },
+    );
+  }
+}
+
+
+/// Imagem dentro do balão da mensagem. Toque para ver em tela cheia.
+class _ImagemMensagem extends StatelessWidget {
+  final String url;
+  final double proporcao;
+  final String legenda;
+
+  const _ImagemMensagem({
+    required this.url,
+    required this.proporcao,
+    this.legenda = '',
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Largura do balão (75% da tela) menos o espaçamento interno
+    final largura = MediaQuery.of(context).size.width * 0.75 - 12;
+    final p = proporcao.clamp(0.75, 1.6).toDouble();
+    final altura = largura / p;
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => _VisualizadorImagem(
+              url: url,
+              legenda: legenda,
+            ),
+          ),
+        );
+      },
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: SizedBox(
+          width: largura,
+          height: altura,
+          child: Image.network(
+            url,
+            fit: BoxFit.cover,
+            loadingBuilder: (context, child, progresso) {
+              if (progresso == null) return child;
+
+              return Container(
+                color: BolhaColors.surfaceAlt,
+                alignment: Alignment.center,
+                child: const SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: BolhaColors.primary,
+                  ),
+                ),
+              );
+            },
+            errorBuilder: (_, __, ___) {
+              return Container(
+                color: BolhaColors.surfaceAlt,
+                alignment: Alignment.center,
+                child: const Icon(
+                  Icons.broken_image_outlined,
+                  size: 40,
+                  color: BolhaColors.textMuted,
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Imagem em tela cheia, com zoom por pinça e a legenda embaixo.
+class _VisualizadorImagem extends StatelessWidget {
+  final String url;
+  final String legenda;
+
+  const _VisualizadorImagem({
+    required this.url,
+    this.legenda = '',
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final texto = legenda.trim();
+
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        elevation: 0,
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: Center(
+              child: InteractiveViewer(
+                minScale: 1,
+                maxScale: 5,
+                child: Image.network(
+                  url,
+                  fit: BoxFit.contain,
+                  loadingBuilder: (context, child, progresso) {
+                    if (progresso == null) return child;
+
+                    return const CircularProgressIndicator(
+                      color: BolhaColors.primary,
+                    );
+                  },
+                  errorBuilder: (_, __, ___) {
+                    return const Icon(
+                      Icons.broken_image_outlined,
+                      size: 56,
+                      color: Colors.white54,
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+          if (texto.isNotEmpty)
+            Container(
+              width: double.infinity,
+              color: Colors.black,
+              child: SafeArea(
+                top: false,
+                child: ConstrainedBox(
+                  // Legendas longas rolam em vez de cobrir a imagem
+                  constraints: const BoxConstraints(maxHeight: 160),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                    child: Text(
+                      texto,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        height: 1.35,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Prévia da foto escolhida, com legenda opcional, antes de enviar.
+/// Devolve a legenda (pode ser vazia) ao enviar, ou null ao voltar.
+class _PreviaImagemScreen extends StatefulWidget {
+  final Uint8List bytes;
+  final String destinatario;
+
+  const _PreviaImagemScreen({
+    required this.bytes,
+    required this.destinatario,
+  });
+
+  @override
+  State<_PreviaImagemScreen> createState() =>
+      _PreviaImagemScreenState();
+}
+
+class _PreviaImagemScreenState extends State<_PreviaImagemScreen> {
+  final TextEditingController _legendaController =
+      TextEditingController();
+
+  @override
+  void dispose() {
+    _legendaController.dispose();
+    super.dispose();
+  }
+
+  void _enviar() {
+    Navigator.pop(context, _legendaController.text.trim());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: false,
+        title: Text(
+          widget.destinatario,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: InteractiveViewer(
+              minScale: 1,
+              maxScale: 5,
+              child: Center(
+                child: Image.memory(
+                  widget.bytes,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+          ),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 4,
+                      ),
+                      decoration: ShapeDecoration(
+                        color: BolhaColors.background,
+                        shape: SketchBorder(
+                          borderRadius: BorderRadius.circular(24),
+                          side: const BorderSide(
+                            color: BolhaColors.primary,
+                            width: 2.5,
+                          ),
+                          variant: 3,
+                        ),
+                      ),
+                      child: TextField(
+                        controller: _legendaController,
+                        minLines: 1,
+                        maxLines: 4,
+                        textCapitalization:
+                            TextCapitalization.sentences,
+                        style: const TextStyle(
+                          color: BolhaColors.textPrimary,
+                          fontSize: 16,
+                        ),
+                        decoration: const InputDecoration(
+                          hintText: 'Adicione uma legenda...',
+                          hintStyle: TextStyle(
+                            color: BolhaColors.textMuted,
+                          ),
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          filled: false,
+                          isDense: true,
+                          contentPadding: EdgeInsets.symmetric(
+                            vertical: 12,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  SketchCircleButton(
+                    icon: Icons.send_rounded,
+                    tooltip: 'Enviar',
+                    onPressed: _enviar,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
