@@ -8,6 +8,7 @@
   <img alt="Tema" src="https://img.shields.io/badge/tema-escuro-0E0A1A?style=for-the-badge">
   <img alt="Status" src="https://img.shields.io/badge/CP4-conclu%C3%ADdo-D94FD6?style=for-the-badge">
   <img alt="Status2" src="https://img.shields.io/badge/CP5-conclu%C3%ADdo-D94FD6?style=for-the-badge">
+  <img alt="Status2" src="https://img.shields.io/badge/CP6-conclu%C3%ADdo-D94FD6?style=for-the-badge">
 </p>
 
 <p align="center">
