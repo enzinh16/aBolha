@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-import 'onboarding_screen.dart';
+import 'login_screen.dart';
 import 'main_screen.dart';
 
 /// Decide, toda vez que o app abre, se o usuário já está logado
-/// (e manda direto pra MainScreen) ou não (e manda pro Onboarding).
+/// (e manda direto pra MainScreen) ou não (e manda pro Login).
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
 
@@ -22,13 +22,13 @@ class AuthGate extends StatelessWidget {
           );
         }
 
-        // Tem usuário salvo no dispositivo -> pula onboarding/login
+        // Tem usuário salvo no dispositivo -> pula login
         if (snapshot.hasData) {
           return const MainScreen();
         }
 
-        // Sem usuário -> fluxo normal de onboarding -> login/registro
-        return const OnboardingScreen();
+        // Sem usuário -> tela de login (de lá dá pra cadastrar ou usar Google/Discord)
+        return const LoginScreen();
       },
     );
   }

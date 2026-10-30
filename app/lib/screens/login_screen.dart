@@ -1,13 +1,20 @@
-import 'package:flutter/material.dart';
-import '../theme/app_theme.dart';
-import '../theme/sketch_shapes.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
-import 'register_screen.dart';
-import 'main_screen.dart';
+import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
+import '../theme/app_theme.dart';
+import '../theme/sketch_shapes.dart';
+import '../widgets/floating_bubbles.dart';
+import '../widgets/sketch_button.dart';
+import '../widgets/social_login_buttons.dart';
+import 'main_screen.dart';
+import 'welcome_screen.dart';
 
+/// Tela inicial do app para quem ainda não está logado.
+///
+/// Segue o mesmo esquema das telas de login de jogos/redes: marca no topo,
+/// "Bem-vindo de volta", e-mail e senha, "Entrar", atalhos Google/Discord e
+/// o convite para quem é novo ("Cadastre-se").
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -36,324 +43,321 @@ class _LoginScreenState extends State<LoginScreen> {
     final senha = _senhaController.text;
 
     if (email.isEmpty || senha.isEmpty) {
-      _mostrarMensagem('Preencha o e-mail e a senha.');
+      _mostrarMensagem('Ops, faltou preencher o e-mail e a senha.');
       return;
     }
 
-    setState(() {
-      _carregando = true;
-    });
+    setState(() => _carregando = true);
 
     try {
       await _authService.login(email, senha);
 
       if (!mounted) return;
 
-      _mostrarMensagem('Login realizado com sucesso!');
-      
-      // Limpa toda a pilha de telas (onboarding, login...) para que a
-      // MainScreen seja a única rota e nenhuma tela mostre seta de voltar.
+      // Limpa a pilha de telas para a MainScreen ser a única rota.
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(
-          builder: (context) => const MainScreen(),
-        ),
+        MaterialPageRoute(builder: (context) => const MainScreen()),
         (route) => false,
       );
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
 
-      String mensagem;
-
       switch (e.code) {
         case 'invalid-credential':
-          mensagem = 'E-mail ou senha incorretos.';
-          break;
-
-        case 'invalid-email':
-          mensagem = 'Digite um e-mail válido.';
-          break;
-
-        case 'user-disabled':
-          mensagem = 'Esta conta foi desativada.';
-          break;
-
-        case 'user-not-found':
-          mensagem = 'Usuário não encontrado.';
-          break;
-
         case 'wrong-password':
-          mensagem = 'Senha incorreta.';
+        case 'user-not-found':
+          _mostrarMensagem('Ops, e-mail ou senha não bateram. Tenta de novo?');
           break;
-
+        case 'invalid-email':
+          _mostrarMensagem('Esse e-mail parece estranho. Dá uma conferida?');
+          break;
+        case 'user-disabled':
+          _mostrarMensagem('Esta conta foi desativada.');
+          break;
+        case 'too-many-requests':
+          _mostrarMensagem('Muitas tentativas seguidas. Espera um pouquinho e tenta de novo.');
+          break;
+        case 'network-request-failed':
+          _mostrarMensagem('Sem internet? Confere a conexão e tenta de novo.');
+          break;
         default:
-          mensagem = 'Não foi possível realizar o login.';
+          _mostrarMensagem('Ops, não rolou entrar agora. Tenta de novo?');
       }
-
-      _mostrarMensagem(mensagem);
     } catch (e) {
       if (!mounted) return;
-
-      _mostrarMensagem('Ocorreu um erro inesperado.');
+      _mostrarMensagem('Ops, algo inesperado aconteceu. Tenta de novo?');
     } finally {
-      if (mounted) {
-        setState(() {
-          _carregando = false;
-        });
+      if (mounted) setState(() => _carregando = false);
+    }
+  }
+
+  Future<void> _esqueciASenha() async {
+    final email = _emailController.text.trim();
+
+    if (email.isEmpty) {
+      _mostrarMensagem(
+        'Digite seu e-mail acima e toque em "Esqueceu a senha?" de novo.',
+      );
+      return;
+    }
+
+    try {
+      await _authService.enviarRedefinicaoDeSenha(email);
+      if (!mounted) return;
+      _mostrarMensagem(
+        'Pronto! Mandamos um link para $email. Olha a caixa de entrada (e o spam).',
+      );
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      if (e.code == 'invalid-email') {
+        _mostrarMensagem('Esse e-mail parece estranho. Dá uma conferida?');
+      } else {
+        _mostrarMensagem('Não deu pra mandar o link agora. Tenta de novo?');
       }
+    } catch (e) {
+      if (!mounted) return;
+      _mostrarMensagem('Não deu pra mandar o link agora. Tenta de novo?');
     }
   }
 
   void _mostrarMensagem(String mensagem) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(mensagem),
-      ),
+      SnackBar(content: Text(mensagem)),
     );
   }
+
+  InputDecoration _decoracao({
+    required String dica,
+    required IconData icone,
+    Widget? sufixo,
+    int variante = 2,
+  }) {
+    SketchInputBorder borda(Color cor, double largura) => SketchInputBorder(
+          borderRadius: BorderRadius.circular(28),
+          borderSide: BorderSide(color: cor, width: largura),
+          variant: variante,
+        );
+
+    return InputDecoration(
+      hintText: dica,
+      hintStyle: const TextStyle(
+        fontFamily: AppTheme.fontCorpo,
+        fontSize: 18,
+        color: BolhaColors.textMuted,
+      ),
+      prefixIcon: Icon(icone, color: BolhaColors.textMuted),
+      suffixIcon: sufixo,
+      filled: true,
+      fillColor: BolhaColors.surface,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      border: borda(BolhaColors.textMuted, 2.5),
+      enabledBorder: borda(BolhaColors.textMuted, 2.5),
+      focusedBorder: borda(BolhaColors.secondary, 3),
+    );
+  }
+
+  static const TextStyle _estiloRotulo = TextStyle(
+    fontFamily: AppTheme.fontCorpo,
+    fontSize: 17,
+    color: BolhaColors.textMuted,
+  );
+
+  static const TextStyle _estiloCampo = TextStyle(
+    fontFamily: AppTheme.fontCorpo,
+    fontSize: 19,
+    color: BolhaColors.textPrimary,
+  );
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: SizedBox(
-            width: 321,
-            height: 329,
-            child: Stack(
-              children: [
-                // Fundo do card
-                Container(
-                  width: 321,
-                  height: 329,
-                  decoration: ShapeDecoration(
-                    color: BolhaColors.surface,
-                    shape: SketchBorder(
-                      side: BorderSide(
-                        width: 1,
-                        color: Colors.black.withValues(alpha: 0.08),
+      body: Stack(
+        children: [
+          // Bolhas bem de leve no fundo, só para dar vida
+          const Positioned.fill(child: FloatingBubbles(opacidade: 0.35)),
+          SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 400),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Center(
+                        child: Image.asset(
+                          'assets/images/wordmark_abolha.png',
+                          width: 220,
+                          fit: BoxFit.contain,
+                        ),
                       ),
-                      borderRadius: BorderRadius.circular(52),
-                    ),
-                  ),
-                ),
-
-                // Título
-                const Positioned(
-                  left: 117,
-                  top: 37,
-                  child: Text(
-                    'Login',
-                    style: TextStyle(
-                      color: BolhaColors.textPrimary,
-                      fontSize: 32,
-                      fontFamily: 'PatrickHand',
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-
-                // Campo de e-mail
-                Positioned(
-                  left: 46,
-                  top: 115,
-                  child: SizedBox(
-                    width: 230,
-                    height: 29,
-                    child: TextField(
-                      controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      textInputAction: TextInputAction.next,
-                      style: const TextStyle(
-                        color: BolhaColors.textPrimary,
-                        fontSize: 15,
-                        fontFamily: 'PatrickHand',
-                        fontWeight: FontWeight.w800,
+                      const SizedBox(height: 22),
+                      const Text(
+                        'Bem-vindo de volta',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontFamily: AppTheme.fontTitulo,
+                          fontSize: 34,
+                          color: BolhaColors.textPrimary,
+                        ),
                       ),
-                      decoration: InputDecoration(
-                        hintText: 'email@example.com',
-                        hintStyle: const TextStyle(
-                          color: BolhaColors.textMuted,
-                          fontSize: 15,
-                          fontFamily: 'PatrickHand',
-                          fontWeight: FontWeight.w800,
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Sua bolha estava com saudade.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontFamily: AppTheme.fontCorpo,
+                          fontSize: 20,
+                          color: BolhaColors.softPink,
                         ),
-                        filled: true,
-                        fillColor: BolhaColors.surfaceAlt,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 0,
+                      ),
+                      const SizedBox(height: 26),
+
+                      const Text('E-mail', style: _estiloRotulo),
+                      const SizedBox(height: 6),
+                      TextField(
+                        controller: _emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        textInputAction: TextInputAction.next,
+                        autofillHints: const [AutofillHints.email],
+                        style: _estiloCampo,
+                        decoration: _decoracao(
+                          dica: 'Digite seu e-mail',
+                          icone: Icons.alternate_email,
+                          variante: 2,
                         ),
-                        border: SketchInputBorder(
-                          borderRadius: BorderRadius.circular(41),
-                          borderSide: BorderSide.none,
-                        ),
-                        enabledBorder: SketchInputBorder(
-                          borderRadius: BorderRadius.circular(41),
-                          borderSide: BorderSide.none,
-                        ),
-                        focusedBorder: SketchInputBorder(
-                          borderRadius: BorderRadius.circular(41),
-                          borderSide: const BorderSide(
-                            color: BolhaColors.primary,
-                            width: 1,
+                      ),
+                      const SizedBox(height: 16),
+
+                      const Text('Senha', style: _estiloRotulo),
+                      const SizedBox(height: 6),
+                      TextField(
+                        controller: _senhaController,
+                        obscureText: !_mostrarSenha,
+                        textInputAction: TextInputAction.done,
+                        onSubmitted: (_) => _fazerLogin(),
+                        autofillHints: const [AutofillHints.password],
+                        style: _estiloCampo,
+                        decoration: _decoracao(
+                          dica: 'Digite sua senha',
+                          icone: Icons.lock_outline,
+                          variante: 4,
+                          sufixo: IconButton(
+                            icon: Icon(
+                              _mostrarSenha
+                                  ? Icons.visibility_off_outlined
+                                  : Icons.visibility_outlined,
+                              color: BolhaColors.textMuted,
+                            ),
+                            onPressed: () {
+                              setState(() => _mostrarSenha = !_mostrarSenha);
+                            },
                           ),
                         ),
                       ),
-                    ),
-                  ),
-                ),
 
-                // Campo de senha
-                Positioned(
-                  left: 46,
-                  top: 165,
-                  child: SizedBox(
-                    width: 230,
-                    height: 29,
-                    child: TextField(
-                      controller: _senhaController,
-                      obscureText: !_mostrarSenha,
-                      textInputAction: TextInputAction.done,
-                      onSubmitted: (_) => _fazerLogin(),
-                      style: const TextStyle(
-                        color: BolhaColors.textPrimary,
-                        fontSize: 15,
-                        fontFamily: 'PatrickHand',
-                        fontWeight: FontWeight.w800,
-                      ),
-                      decoration: InputDecoration(
-                        hintText: 'senha',
-                        hintStyle: const TextStyle(
-                          color: BolhaColors.textMuted,
-                          fontSize: 15,
-                          fontFamily: 'PatrickHand',
-                          fontWeight: FontWeight.w800,
-                        ),
-                        filled: true,
-                        fillColor: BolhaColors.surfaceAlt,
-                        contentPadding: const EdgeInsets.only(
-                          left: 12,
-                          right: 8,
-                          top: 0,
-                          bottom: 0,
-                        ),
-                        suffixIcon: IconButton(
-                          padding: EdgeInsets.zero,
-                          iconSize: 16,
-                          icon: Icon(
-                            _mostrarSenha
-                                ? Icons.visibility_off
-                                : Icons.visibility,
-                            color: BolhaColors.textMuted,
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              _mostrarSenha = !_mostrarSenha;
-                            });
-                          },
-                        ),
-                        border: SketchInputBorder(
-                          borderRadius: BorderRadius.circular(41),
-                          borderSide: BorderSide.none,
-                        ),
-                        enabledBorder: SketchInputBorder(
-                          borderRadius: BorderRadius.circular(41),
-                          borderSide: BorderSide.none,
-                        ),
-                        focusedBorder: SketchInputBorder(
-                          borderRadius: BorderRadius.circular(41),
-                          borderSide: const BorderSide(
-                            color: BolhaColors.primary,
-                            width: 1,
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: _esqueciASenha,
+                          child: const Text(
+                            'Esqueceu a senha?',
+                            style: TextStyle(
+                              fontFamily: AppTheme.fontCorpo,
+                              fontSize: 17,
+                              color: BolhaColors.secondary,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ),
-                ),
+                      const SizedBox(height: 4),
 
-                // Botão Avançar
-                Positioned(
-                  left: 107,
-                  top: 233,
-                  child: SizedBox(
-                    width: 108,
-                    height: 29,
-                    child: ElevatedButton(
-                      onPressed: _carregando ? null : _fazerLogin,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: BolhaColors.primary,
-                        disabledBackgroundColor: BolhaColors.primary,
-                        padding: EdgeInsets.zero,
-                        shape: SketchBorder(
-                          borderRadius: BorderRadius.circular(41),
-                        ),
-                        elevation: 0,
+                      SketchButton(
+                        rotulo: 'Entrar',
+                        carregando: _carregando,
+                        onPressed: _fazerLogin,
                       ),
-                      child: _carregando
-                          ? const SizedBox(
-                              width: 15,
-                              height: 15,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Text(
-                              'Avançar',
+
+                      const SizedBox(height: 22),
+                      const _DivisorOu(),
+                      const SizedBox(height: 22),
+
+                      const SocialLoginButtons(),
+
+                      const SizedBox(height: 24),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text(
+                            'Não tem uma conta?',
+                            style: TextStyle(
+                              fontFamily: AppTheme.fontCorpo,
+                              fontSize: 18,
+                              color: BolhaColors.textMuted,
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const WelcomeScreen(),
+                                ),
+                              );
+                            },
+                            child: const Text(
+                              'Cadastre-se',
                               style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 15,
-                                fontFamily: 'PatrickHand',
-                                fontWeight: FontWeight.w800,
+                                fontFamily: AppTheme.fontTitulo,
+                                fontSize: 20,
+                                color: BolhaColors.secondary,
+                                decoration: TextDecoration.underline,
+                                decorationColor: BolhaColors.secondary,
+                                decorationThickness: 2.5,
                               ),
                             ),
-                    ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-                Positioned(
-                  left: 46,
-                  top: 255,
-                child: SizedBox(
-                  width: 230,
-                  height: 48,
-                child: TextButton( 
-                  onPressed: () { 
-                    Navigator.push( 
-                      context, 
-                      MaterialPageRoute( 
-                        builder: (context) => const RegisterScreen(), 
-                        ), 
-                        ); 
-                        }, 
-                        child: const Text(
-                          'Não possui uma conta? Crie uma já!',
-                          style: TextStyle(
-                          fontSize: 10,
-                          decoration: TextDecoration.underline,
-                          decorationColor: BolhaColors.primary,
-                          decorationThickness: 2.5,
-                          ), 
-                        ),
-                    )
-                  )
-                ),
-                Positioned(
-                  left: 22,
-                  top: 24,
-                  child: IconButton(
-                    icon: const Icon(Icons.arrow_back),
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                  ),
-                )
-              ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Linha "—— OU ——" que separa o login por e-mail dos atalhos sociais.
+class _DivisorOu extends StatelessWidget {
+  const _DivisorOu();
+
+  @override
+  Widget build(BuildContext context) {
+    const linha = Expanded(
+      child: Divider(color: BolhaColors.surfaceAlt, thickness: 3, height: 3),
+    );
+
+    return const Row(
+      children: [
+        linha,
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 14),
+          child: Text(
+            'OU',
+            style: TextStyle(
+              fontFamily: AppTheme.fontTitulo,
+              fontSize: 18,
+              color: BolhaColors.textMuted,
             ),
           ),
         ),
-      ),
+        linha,
+      ],
     );
   }
 }

@@ -13,7 +13,7 @@ Existe uma lacuna clara para um app **mobile-first, em português, com descobert
 
 Não é só uma ideia: o aBolha já roda como app Flutter com Firebase. Quem baixa hoje consegue:
 
-- **Criar conta e entrar**, com a sessão salva no aparelho;
+- **Criar conta e entrar**, por e-mail e senha ou pelos atalhos Google e Discord (em ativação no Firebase), com a sessão salva no aparelho;
 - **Criar, entrar e sair de bolhas**, cada uma com a própria página;
 - **Postar, curtir e comentar** (com respostas aninhadas), num feed de rolagem infinita;
 - **Conversar em privado** em tempo real;

@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'firebase_options.dart';
 import 'theme/app_theme.dart';
-// import 'screens/onboarding_screen.dart';
 import 'screens/auth_gate.dart';
 
 void main() async {

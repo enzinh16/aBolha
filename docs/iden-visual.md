@@ -16,12 +16,12 @@
 2. **Curto, fácil de falar e de lembrar**: artigo + uma palavra, comum no vocabulário do dia a dia em português, com maneiras de se fracionar de acordo com o nome da comunidade/bolha (como "aBolha da Rockstar") sem necessidade de explicação.
 3. **Visualmente rico**: "bolha" já sugere formas redondas e coloridas, uma identidade natural para o logo e para os elementos de interface (balões de chat, avatares, tags).
 
-O slogan que acompanha o nome, **"Crie e viva sua bolha"**, reforça a proposta de valor central: pertencimento. É a frase que aparece na tela de onboarding do app.
+O slogan que acompanha o nome, **"Crie e viva sua bolha"**, reforça a proposta de valor central: pertencimento. É a frase que aparece na tela de boas-vindas do app.
 
 ## 2. Tom de voz
 
 - **Próximo e informal**: o app fala como um amigo, não como uma empresa. Uso de linguagem coloquial brasileira, sem gírias forçadas.
-- **Acolhedor**: mensagens de erro, onboarding e notificações são escritas para incluir, nunca para constranger (ex.: em vez de "Erro: campo inválido", usa-se algo como "Ops, faltou preencher isso aqui").
+- **Acolhedor**: mensagens de erro, login, boas-vindas e notificações são escritas para incluir, nunca para constranger (ex.: em vez de "Erro: campo inválido", usa-se algo como "Ops, faltou preencher isso aqui").
 - **Curioso e leve**: o app estimula exploração ("Vamos descobrir sua próxima bolha?") em vez de comandos diretos.
 - **Nunca corporativo**: evitar jargão de "plataforma", "engajamento", "ecossistema" na comunicação voltada ao usuário final.
 
@@ -105,7 +105,7 @@ O protótipo da identidade v1 continua no Figma: 🔗 [Figma do CP4](https://www
 ## 8. Prévia das telas
 
 <p align="center">
-  <img src="../assets/readme/telas/previa_acesso_e_feed.png" width="720" alt="Onboarding, login e home">
+  <img src="../assets/readme/telas/previa_acesso_e_feed.png" width="720" alt="Login, boas-vindas e home">
 </p>
 
 *Prévias ilustrativas do design do app, feitas com a mesma paleta, fontes e bordas do projeto.*

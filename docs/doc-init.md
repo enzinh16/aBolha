@@ -23,8 +23,10 @@ Pessoas com interesses específicos (um fandom, um jogo, um hobby, uma coincidê
 
 | Funcionalidade | Como funciona hoje |
 |---|---|
-| **Cadastro e login** | Nome, e-mail, telefone e senha (com confirmação). Login por e-mail e senha com **Firebase Authentication**. |
-| **Sessão persistente** | Quem já entrou abre o app direto na tela principal; só vê onboarding e login se não houver sessão salva. |
+| **Cadastro e login** | Nome, e-mail, telefone e senha (com confirmação). Login por e-mail e senha com **Firebase Authentication**, com **"Esqueceu a senha?"** (link de redefinição por e-mail). |
+| **Login com Google e Discord** | Atalhos "Continuar com Google/Discord" nas telas de login e boas-vindas. Na primeira vez, o perfil é criado automaticamente com nome e foto da conta. Precisam ser ativados no Firebase ([guia](login-social.md)). |
+| **Boas-vindas** | Tela para quem é novo: apresenta o que dá para fazer no app e leva ao cadastro. Aparece ao tocar em "Cadastre-se" no login. |
+| **Sessão persistente** | Quem já entrou abre o app direto na tela principal; só vê o login (e, de lá, as boas-vindas e o cadastro) se não houver sessão salva. |
 | **Bolhas (comunidades)** | Qualquer usuário **cria uma bolha** (nome, descrição e URL da foto), **entra** e **sai** dela. A aba *Bolhas* separa **Minhas Bolhas** de **Todas**. |
 | **Página da bolha** | Mostra a descrição, o botão de entrar/sair e os posts daquela comunidade. |
 | **Feed (Home)** | Posts mais recentes das bolhas, com **rolagem infinita** (5 posts por vez). Cada post mostra autor, bolha de origem, curtidas e comentários. |
@@ -38,7 +40,7 @@ Os dados aparecem **em tempo real** (posts, curtidas, comentários e mensagens u
 
 ### 3.2 Planejadas (ainda não implementadas)
 
-- **Onboarding por interesses**: no cadastro, escolher temas/tags e receber sugestões de bolhas compatíveis. Hoje o onboarding é só a tela de boas-vindas.
+- **Onboarding por interesses**: no cadastro, escolher temas/tags e receber sugestões de bolhas compatíveis. Hoje a tela de boas-vindas apresenta o app, mas não pergunta interesses.
 - **Pesquisa**: a aba existe na barra inferior, mas a tela ainda é um espaço reservado.
 - **Imagens nos posts**: o modelo de post já tem o campo de imagem, mas a tela de nova postagem aceita só texto.
 - **Chat em grupo** por bolha (hoje o chat é apenas 1 a 1).
@@ -51,7 +53,7 @@ Os dados aparecem **em tempo real** (posts, curtidas, comentários e mensagens u
 
 | Área | Telas |
 |---|---|
-| Acesso | Onboarding, Login, Cadastro |
+| Acesso | Login (tela inicial), Boas-vindas, Cadastro |
 | Barra inferior | Minha conta (perfil), Bolhas, Home, Pesquisa, Chat |
 | Bolhas | Criar bolha, página da bolha, nova postagem, detalhe da postagem (curtidas e comentários) |
 | Pessoas | Perfil de outro usuário, seguidores/seguindo, editar perfil |

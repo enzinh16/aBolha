@@ -6,7 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import '../theme/app_theme.dart';
 import '../theme/sketch_shapes.dart';
 import '../services/imgbb_service.dart';
-import '../screens/onboarding_screen.dart';
+import '../screens/login_screen.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -221,7 +221,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
         (route) => false,
       );
     } catch (e) {

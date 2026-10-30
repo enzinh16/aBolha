@@ -31,7 +31,7 @@ Hoje quem quer entrar numa comunidade esbarra em dois extremos: o **Discord**, q
 
 <p align="center">
   <img src="assets/readme/gifs/tour.gif" width="300" alt="Passeio pelas telas do aBolha">
-  <br><sub>Um passeio pelo app: do onboarding ao perfil.</sub>
+  <br><sub>Um passeio pelo app: do login ao perfil.</sub>
 </p>
 
 <br>
@@ -71,16 +71,28 @@ Além dos comentários, cada pessoa pode **trocar mensagens privadas 1 a 1**. A 
 </tr>
 </table>
 
+### 🔑 Entre do seu jeito
+
+A tela inicial é um **login** no estilo de jogos e redes: *Bem-vindo de volta*, e-mail e senha, **Esqueceu a senha?** e atalhos **Continuar com Google** e **Continuar com Discord**. Quem é novo toca em **Cadastre-se** e cai na **tela de boas-vindas**: bolhas flutuando, o que dá para fazer no app e o botão **Criar minha conta** (ou os mesmos atalhos de Google e Discord).
+
+<p align="center">
+  <img src="assets/readme/telas/01_login.png" width="300" alt="Tela de login">
+  &nbsp;&nbsp;
+  <img src="assets/readme/telas/02_boas-vindas.png" width="300" alt="Tela de boas-vindas">
+</p>
+
+> ℹ️ Os atalhos já estão no app, mas Google e Discord precisam ser **ativados no Firebase**. Passo a passo em [`docs/login-social.md`](docs/login-social.md).
+
 ### 👤 Perfil, seguidores e conta
 
-Cada pessoa tem um **perfil** com os seus posts, contagem de **seguidores** e **seguindo**, e pode **seguir** ou deixar de seguir outras. Dá para **editar os dados do perfil**, **trocar a senha** e **sair da conta**. O login é por e-mail e senha, e a **sessão fica salva no aparelho**: você abre o app e já cai direto na Home, sem passar pelo login de novo.
+Cada pessoa tem um **perfil** com os seus posts, contagem de **seguidores** e **seguindo**, e pode **seguir** ou deixar de seguir outras. Dá para **editar os dados do perfil**, **trocar a senha** e **sair da conta**. O login é por e-mail e senha (ou pelos atalhos Google e Discord), e a **sessão fica salva no aparelho**: você abre o app e já cai direto na Home, sem passar pelo login de novo.
 
 <br>
 
 <a id="telas"></a>
 <p align="center"><img src="assets/readme/banners/previa.png" width="900" alt="Prévia das telas"></p>
 
-<p align="center"><img src="assets/readme/telas/previa_acesso_e_feed.png" width="900" alt="Onboarding, login e home"></p>
+<p align="center"><img src="assets/readme/telas/previa_acesso_e_feed.png" width="900" alt="Login, boas-vindas e home"></p>
 <p align="center"><img src="assets/readme/telas/previa_bolhas.png" width="900" alt="Bolhas, página da bolha e postagem"></p>
 <p align="center"><img src="assets/readme/telas/previa_chat_e_perfil.png" width="900" alt="Conversas, chat e perfil"></p>
 
@@ -142,7 +154,7 @@ flutter build apk --release
 | Camada | Tecnologia |
 |---|---|
 | App | **Flutter** (Dart), Material 3 com tema escuro próprio |
-| Login | **Firebase Authentication** (e-mail e senha, sessão persistente) |
+| Login | **Firebase Authentication** (e-mail e senha, Google e Discord, sessão persistente) |
 | Dados em tempo real | **Cloud Firestore** (bolhas, posts, curtidas, comentários, conversas, seguidores) |
 | Visual | Componentes desenhados à mão: `SketchBorder`, `SketchInputBorder`, `SketchAvatar` |
 | Fontes | **Bolha Display** (derivada da Erica One) e **Patrick Hand**, ambas OFL |
@@ -168,6 +180,8 @@ Detalhes completos em [`docs/iden-visual.md`](docs/iden-visual.md).
 **Já está no app**
 
 - [x] Cadastro, login e sessão salva no aparelho
+- [x] Login no estilo "Bem-vindo de volta", recuperação de senha e tela de boas-vindas para novos usuários
+- [x] Atalhos **Continuar com Google** e **Continuar com Discord** no app
 - [x] Criar, entrar e sair de bolhas
 - [x] Feed com rolagem infinita, posts, curtidas e comentários com respostas
 - [x] Chat privado 1 a 1 em tempo real
@@ -178,6 +192,7 @@ Detalhes completos em [`docs/iden-visual.md`](docs/iden-visual.md).
 **Vem aí**
 
 - [ ] Tela de **Pesquisa** (hoje a aba é um espaço reservado)
+- [ ] **Ativar Google e Discord no Firebase** (guia em [`docs/login-social.md`](docs/login-social.md))
 - [ ] **Onboarding por interesses**, com sugestão de bolhas
 - [ ] **Imagens nos posts** (o modelo já tem o campo, falta a tela de envio)
 - [ ] **Chat em grupo** por bolha
@@ -208,6 +223,7 @@ Projeto da disciplina **Application Development**, FIAP.
 | Documento | O que tem |
 |---|---|
 | 📄 [Documentação inicial](docs/doc-init.md) | problema, público-alvo, funcionalidades entregues, arquitetura e fora do escopo |
+| 🔑 [Login com Google e Discord](docs/login-social.md) | como ativar os provedores no Firebase e resolver erros comuns |
 | 🎨 [Marca e identidade visual](docs/iden-visual.md) | naming, tom de voz, paleta, tipografia, logo e bordas |
 | 💡 [Pitch](docs/pitch.md) | por que existe, modelo de negócio e diferencial competitivo |
 | 🧩 [Figma (versão v1 do CP4)](https://www.figma.com/design/38aT0QTtkFo71ZaKE8XGIb/CP4?node-id=7-2&t=r9vnsEHf1n3dl786-1) | protótipo da primeira identidade, em azul |
@@ -236,6 +252,7 @@ aBolha/
 ├── docs/
 │   ├── doc-init.md
 │   ├── iden-visual.md
+│   ├── login-social.md
 │   ├── pitch.md
 │   └── arte/                 # SVGs do logo e do wordmark
 └── README.md
