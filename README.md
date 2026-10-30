@@ -189,18 +189,17 @@ Detalhes completos em [`docs/iden-visual.md`](docs/iden-visual.md).
 - [x] Seguir, seguidores e seguindo
 - [x] Edição de perfil, troca de senha e logout
 - [x] Identidade visual v2 (escura, roxo e rosa, desenhada à mão)
+- [x] **Imagens nos posts** (o modelo já tem o campo, falta a tela de envio)
+- [x] Tela de **Pesquisa**
 
 **Vem aí**
 
-- [ ] Tela de **Pesquisa** (hoje a aba é um espaço reservado)
 - [ ] **Ativar Google e Discord no Firebase** (guia em [`docs/login-social.md`](docs/login-social.md))
 - [ ] **Onboarding por interesses**, com sugestão de bolhas
-- [ ] **Imagens nos posts** (o modelo já tem o campo, falta a tela de envio)
 - [ ] **Chat em grupo** por bolha
 - [ ] **Gamificação leve**: níveis e badges por participação
 - [ ] **Moderação** híbrida (IA em casos menores e equipe nos críticos)
 - [ ] Monetização freemium (bolhas premium, moedas virtuais, anúncios por nicho)
-- [ ] Publicar o APK em *Releases*
 
 <br>
 
