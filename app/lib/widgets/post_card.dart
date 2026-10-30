@@ -468,9 +468,11 @@ class PostCard extends StatelessWidget {
                           child: Padding(
                             padding:
                                 const EdgeInsets
-                                    .symmetric(
-                              horizontal: 0,
-                              vertical: 8,
+                                    .fromLTRB(
+                              0,
+                              14,
+                              14,
+                              14,
                             ),
                             child: Row(
                               children: [
@@ -503,7 +505,6 @@ class PostCard extends StatelessWidget {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 14),
                         Row(
                           children: [
                             const SizedBox(
