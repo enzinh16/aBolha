@@ -390,7 +390,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
       children: [
         Expanded(
           child: _botaoEstatistica(
+            titulo: 'Posts',
+            variant: 0,
+            stream: _postService.ouvirMeusPosts(uid),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _botaoEstatistica(
             titulo: 'Seguidores',
+            variant: 1,
             stream: FirebaseFirestore.instance
                 .collection('users')
                 .doc(uid)
@@ -403,6 +412,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Expanded(
           child: _botaoEstatistica(
             titulo: 'Seguindo',
+            variant: 2,
             stream: FirebaseFirestore.instance
                 .collection('users')
                 .doc(uid)
@@ -419,7 +429,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required String titulo,
     required Stream<QuerySnapshot<Map<String, dynamic>>>
         stream,
-    required VoidCallback onTap,
+    VoidCallback? onTap,
+    int variant = 0,
   }) {
     return StreamBuilder<
         QuerySnapshot<Map<String, dynamic>>>(
@@ -428,24 +439,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
         final quantidade =
             snapshot.data?.docs.length ?? 0;
 
+        // Mesmo contorno rabiscado do restante do app
+        final forma = SketchBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: const BorderSide(
+            color: BolhaColors.outline,
+            width: 1.8,
+          ),
+          variant: variant,
+        );
+
         return Material(
           color: BolhaColors.surface,
-          borderRadius: BorderRadius.circular(14),
+          shape: forma,
+          clipBehavior: Clip.antiAlias,
           child: InkWell(
+            customBorder: forma,
             onTap: onTap,
-            borderRadius: BorderRadius.circular(14),
             child: Container(
+              width: double.infinity,
               padding:
                   const EdgeInsets.symmetric(
                 vertical: 14,
                 horizontal: 12,
-              ),
-              decoration: BoxDecoration(
-                borderRadius:
-                    BorderRadius.circular(14),
-                border: Border.all(
-                  color: BolhaColors.surfaceAlt,
-                ),
               ),
               child: Column(
                 children: [

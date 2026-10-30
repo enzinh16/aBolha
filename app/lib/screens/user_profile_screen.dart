@@ -418,6 +418,23 @@ class _UserProfileScreenState
     return Row(
       children: [
         Expanded(
+          child: StreamBuilder<
+              QuerySnapshot<Map<String, dynamic>>>(
+            stream: _postService.ouvirMeusPosts(
+              widget.userId,
+            ),
+            builder: (context, snapshot) {
+              return _estatistica(
+                valor:
+                    '${snapshot.data?.docs.length ?? 0}',
+                texto: 'Posts',
+                variant: 0,
+              );
+            },
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
           child: InkWell(
             borderRadius:
                 BorderRadius.circular(12),
@@ -444,6 +461,7 @@ class _UserProfileScreenState
                 return _estatistica(
                   valor: '${snapshot.data ?? 0}',
                   texto: 'Seguidores',
+                  variant: 1,
                 );
               },
             ),
@@ -477,6 +495,7 @@ class _UserProfileScreenState
                 return _estatistica(
                   valor: '${snapshot.data ?? 0}',
                   texto: 'Seguindo',
+                  variant: 2,
                 );
               },
             ),
@@ -489,16 +508,24 @@ class _UserProfileScreenState
   Widget _estatistica({
     required String valor,
     required String texto,
+    int variant = 0,
   }) {
     return Container(
       padding:
           const EdgeInsets.symmetric(
         vertical: 12,
       ),
-      decoration: BoxDecoration(
+      // Mesmo contorno rabiscado do restante do app
+      decoration: ShapeDecoration(
         color: BolhaColors.surface,
-        borderRadius:
-            BorderRadius.circular(12),
+        shape: SketchBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: const BorderSide(
+            color: BolhaColors.outline,
+            width: 1.8,
+          ),
+          variant: variant,
+        ),
       ),
       child: Column(
         children: [
