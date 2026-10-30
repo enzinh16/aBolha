@@ -12,11 +12,15 @@ class ChatService {
   Future<void> enviarMensagem({
     required String conversationId,
     required String senderId,
-    required String texto,
+    String texto = '',
+    String? imagemUrl,
+    double? imagemProporcao,
   }) async {
     final mensagem = texto.trim();
+    final temImagem = imagemUrl != null && imagemUrl.isNotEmpty;
 
-    if (mensagem.isEmpty) return;
+    // Precisa ter texto, imagem ou os dois (imagem com legenda).
+    if (mensagem.isEmpty && !temImagem) return;
 
     final conversaRef =
         _firestore.collection('conversations').doc(conversationId);
@@ -30,11 +34,16 @@ class ChatService {
     await conversaRef.collection('messages').add({
       'senderId': senderId,
       'text': mensagem,
+      if (temImagem) 'imageUrl': imagemUrl,
+      if (temImagem && imagemProporcao != null)
+        'imageRatio': imagemProporcao,
       'createdAt': FieldValue.serverTimestamp(),
     });
 
     await conversaRef.update({
-      'lastMessage': mensagem,
+      'lastMessage': temImagem
+          ? (mensagem.isEmpty ? '📷 Foto' : '📷 $mensagem')
+          : mensagem,
       'updatedAt': FieldValue.serverTimestamp(),
     });
   }
